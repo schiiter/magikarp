@@ -3,4 +3,4 @@
  */
 public class CircularBuffer {
 int j;
-}
+int i;}
