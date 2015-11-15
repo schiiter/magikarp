@@ -192,7 +192,7 @@ public class ChatServer {
 	}
 
 	public String postMessage(String[] args, String name) {
-
+		return null;
 	}
 
 	public String getMessages(String[] args) {
