@@ -21,21 +21,33 @@ public class CircularBuffer {
         while (addon.length() < 4) {
             addon = "0" + addon;
         }
-        if(count < 9999) {
+        if (count < 9999) {
             count++;
-        }
-        else {
+        } else {
             count = 0;
         }
 
 
         messages.add(0, addon + message);
-        if(messages.size() > size) {
+        if (messages.size() > size) {
             messages.remove(size);
         }
     }
 
     public String[] getNewest(int numMessages) {
-        return null;
+        int numAvailable = messages.size();
+        int newestMessagesSize = Math.min(numMessages, numAvailable);
+        String[] newestMessages = new String[newestMessagesSize];
+        //todo
+        int pos = count % size;
+
+        //Null checker and case of 0
+        if (numMessages < 0) return null;
+        if (numMessages == 0) return newestMessages;
+
+        for (int i = 0; i < newestMessagesSize; i++) {
+            newestMessages[i] = messages.get(i);
+        }
+        return newestMessages;
     }
 }

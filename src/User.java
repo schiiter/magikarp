@@ -31,7 +31,6 @@ public class User {
     }
 
     public void setCookie(SessionCookie cookie) {
-        //todo cookie ?????
         this.cookie = cookie;
     }
 
