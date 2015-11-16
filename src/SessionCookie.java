@@ -10,10 +10,11 @@ public class SessionCookie {
 
     public SessionCookie(long id) {
         this.id = id;
+        this.lastActivityTime = System.currentTimeMillis();
     }
 
     public boolean hasTimedOut() {
-        if (System.currentTimeMillis() - lastActivityTime <= timeoutLength) {
+        if (System.currentTimeMillis() - lastActivityTime >= timeoutLength * 1000) {
             return true;
         }
         return false;
