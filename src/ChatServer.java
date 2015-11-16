@@ -16,14 +16,13 @@ import java.util.*;
  */
 public class ChatServer {
 	private User[] users;
-	private int maxMessages;
-
+	private CircularBuffer cr;
 
 	public ChatServer(User[] users, int maxMessages) {
 		this.users = users;
-		this.maxMessages = maxMessages;
 		this.users = Arrays.copyOf(users, users.length + 1);
-		users[0] = new User("root", "cs180", null);
+		this.users[0] = new User("root", "cs180", null);
+		cr = new CircularBuffer(maxMessages);
 	}
 
 	/**
@@ -117,19 +116,22 @@ public class ChatServer {
 
 			parameter[parameter.length - 1] = (parameter[parameter.length - 1].split("\r\n"))[0];
 
+
+		//TODO CHECK NO COOKIE ID CONFLICT!!!!!!!!!!!
 			switch (command) {
 				case "ADD-USER":
 					if(parameter.length != 3) {
 						return "failure 10";
 					}
 					else {
-                        int i = findUserIndex(parameter[0]);
+                        int i = findUserIndex(Integer.parseInt(parameter[0]));
                         //if the user that wants to create account is currently logged in
                         if (users[i].getCookie().getID() == Integer.parseInt(parameter[0])) {
                             if (!users[i].getCookie().hasTimedOut()) {
                                 return addUser(parameter);
                             } else {
-                                //TODO: error05
+								users[i].setCookie(null);
+								return "failure 05";
                             }
                         }
 					}
@@ -138,23 +140,39 @@ public class ChatServer {
 						return "failure 10";
 					}
 					else {
-                        //TODO
+						return userLogin(parameter);
 					}
 				case "POST-MESSAGE":
 					if(parameter.length != 2) {
 						return "failure 10";
 					}
 					else {
-						//todo check login session is authenticated
-						//postMessage(parameter, name);
+						int i = findUserIndex(Integer.parseInt(parameter[0]));
+						//if the user that wants to create account is currently logged in
+						if (users[i].getCookie().getID() == Integer.parseInt(parameter[0])) {
+							if (!users[i].getCookie().hasTimedOut()) {
+								return postMessage(parameter, users[i].getName());
+							} else {
+								users[i].setCookie(null);
+								return "failure 05";
+							}
+						}
 					}
 				case "GET-MESSAGES":
 					if(parameter.length != 2) {
 						return "failure 10";
 					}
 					else {
-						//todo check login session is authenticated
-						getMessages(parameter);
+						int i = findUserIndex(Integer.parseInt(parameter[0]));
+						//if the user that wants to create account is currently logged in
+						if (users[i].getCookie().getID() == Integer.parseInt(parameter[0])) {
+							if (!users[i].getCookie().hasTimedOut()) {
+								return getMessages(parameter);
+							} else {
+								users[i].setCookie(null);
+								return "failure 05";
+							}
+						}
 					}
 				default:
 					return "failure 11";
@@ -163,10 +181,10 @@ public class ChatServer {
 
 	public String addUser(String[] args) {
         int i = findUserIndex(args[1]);
-        if (i != -1) return "failure 22";
+        if (i == -1) return "failure 22";
 
         users = Arrays.copyOf(users, users.length + 1);
-        users[users.length - 1] = new User(args[1], args[2], new SessionCookie(Integer.parseInt(args[0])));
+        users[users.length - 1] = new User(args[1], args[2], null);
         return "successful";
 	}
 
@@ -175,7 +193,8 @@ public class ChatServer {
         if (i == -1) return "failure 20";
         if (!users[i].getCookie().hasTimedOut()) return "failure 25";
         if (users[i].checkPassword(args[1])) {
-            SessionCookie sc = new SessionCookie((int) (Math.random() * 10000));
+            SessionCookie sc = new SessionCookie(cookieIDgen());
+			users[i].setCookie(sc);
             return "success";
         } else {
             return "failure 21";
@@ -183,11 +202,15 @@ public class ChatServer {
 	}
 
 	public String postMessage(String[] args, String name) {
-		return null;
+		cr.put(args[1]);
+		int i = findUserIndex(name);
+		users[i].setCookie(new SessionCookie(Integer.parseInt(args[1])));
+		return "success";
 	}
 
 	public String getMessages(String[] args) {
-        return "";
+        cr.getNewest(Integer.parseInt(args[1]));
+		return "success";
 	}
 
     public int findUserIndex(long cookieID) {
@@ -203,4 +226,12 @@ public class ChatServer {
         }
         return -1;
     }
+
+	public int cookieIDgen() {
+		int random;
+		do {
+			random = (int) (Math.random() * 10000);
+		} while (findUserIndex(random) != -1);
+		return random;
+	}
 }
