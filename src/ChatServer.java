@@ -22,8 +22,7 @@ public class ChatServer {
 	public ChatServer(User[] users, int maxMessages) {
 		this.users = users;
 		this.maxMessages = maxMessages;
-		users = new User[1];
-		//todo cookie id????????
+		this.users = Arrays.copyOf(users, users.length + 1);
 		users[0] = new User("root", "cs180", null);
 	}
 
@@ -102,7 +101,6 @@ public class ChatServer {
 	 * @return the server response
 	 */
 	public String parseRequest(String request) {
-		// TODO: Replace the following code with the actual code
 			String command;
 
 			if(!(request.substring(request.length()-4, request.length()).equals("\r\n"))) {
@@ -114,7 +112,7 @@ public class ChatServer {
 			String[] parameter = new String[temp.length - 1];
 
 			for(int i = 0; i < temp.length - 1; i++) {
-				parameter[i] = temp[i + 1];                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             zcx f
+				parameter[i] = temp[i + 1];
 			}
 
 			parameter[parameter.length - 1] = (parameter[parameter.length - 1].split("\r\n"))[0];
@@ -125,15 +123,22 @@ public class ChatServer {
 						return "failure 10";
 					}
 					else {
-						//todo check login session is authenticated
-						addUser(parameter);
+                        int i = findUserIndex(parameter[0]);
+                        //if the user that wants to create account is currently logged in
+                        if (users[i].getCookie().getID() == Integer.parseInt(parameter[0])) {
+                            if (!users[i].getCookie().hasTimedOut()) {
+                                return addUser(parameter);
+                            } else {
+                                //TODO: error05
+                            }
+                        }
 					}
 				case "USER-LOGIN":
 					if(parameter.length != 2) {
 						return "failure 10";
 					}
 					else {
-						userLogin(parameter);
+                        //TODO
 					}
 				case "POST-MESSAGE":
 					if(parameter.length != 2) {
@@ -157,38 +162,24 @@ public class ChatServer {
 	}
 
 	public String addUser(String[] args) {
-		int count = 0;
-		for(int i = 0; i < users.length; i++) {
-			if (users[i].getName().equals(args[0])) {
-				count++;
-			}
-		}
-		if(count > 0){
-			return "failure 22";
-		}
-		else {
-			users = Arrays.copyOf(users, users.length + 1);
-			//todo cookie id
-			users[users.length - 1] = new User(args[1], args[2], null);
-			return "successful";
-		}
+        int i = findUserIndex(args[1]);
+        if (i != -1) return "failure 22";
+
+        users = Arrays.copyOf(users, users.length + 1);
+        users[users.length - 1] = new User(args[1], args[2], new SessionCookie(Integer.parseInt(args[0])));
+        return "successful";
 	}
 
 	public String userLogin(String[] args) {
-		for(int i = 0; i < users.length; i++) {
-			if((users[i].getName()).equals(args[0])) {
-				if(users[i].checkPassword(args[1])) {
-
-					//todo cooooooookie!!!!!!
-					users[i].setCookie("");
-					return "success";
-				}
-				else {
-					return "failure 21";
-				}
-			}
-		}
-		return "failure 20";
+        int i = findUserIndex(args[0]);
+        if (i == -1) return "failure 20";
+        if (!users[i].getCookie().hasTimedOut()) return "failure 25";
+        if (users[i].checkPassword(args[1])) {
+            SessionCookie sc = new SessionCookie((int) (Math.random() * 10000));
+            return "success";
+        } else {
+            return "failure 21";
+        }
 	}
 
 	public String postMessage(String[] args, String name) {
@@ -196,6 +187,20 @@ public class ChatServer {
 	}
 
 	public String getMessages(String[] args) {
-
+        return "";
 	}
+
+    public int findUserIndex(long cookieID) {
+        for (int i = 0; i < users.length; i++) {
+            if (users[i].getCookie().getID() == cookieID) return i;
+        }
+        return -1;
+    }
+
+    public int findUserIndex(String name) {
+        for (int i = 0; i < users.length; i++) {
+            if (users[i].getName().equals(name)) return i;
+        }
+        return -1;
+    }
 }
