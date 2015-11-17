@@ -7,22 +7,23 @@ import java.util.*;
  * This is the skeleton code for the ChatServer Class. This is a private chat
  * server for you and your friends to communicate.
  * 
- * @author (Your Name) <(YourEmail@purdue.edu)>
- * 
- * @lab (Your Lab Section)
+ * @author Qizheng Mao <mao15@purdue.edu>
+ * @author Yuhang Zhu <zhu302@purdue.edu>
+ *
+ * @lab 823 (Your Lab Section)
  * 
  * @version (Today's Date)
  *
  */
 public class ChatServer {
 	private User[] users;
-	private CircularBuffer cr;
+	private CircularBuffer cb;
 
 	public ChatServer(User[] users, int maxMessages) {
 		this.users = users;
 		this.users = Arrays.copyOf(users, users.length + 1);
 		this.users[0] = new User("root", "cs180", null);
-		cr = new CircularBuffer(maxMessages);
+		cb = new CircularBuffer(maxMessages);
 	}
 
 	/**
@@ -104,7 +105,7 @@ public class ChatServer {
 		String command;
 
 		if(!(request.substring(request.length()-2, request.length()).equals("\r\n"))) {
-			return "failure 10";
+			return MessageFactory.makeErrorMessage(10);
 		}
 		String[] temp = request.split("\t");
 		command = temp[0];
@@ -116,95 +117,107 @@ public class ChatServer {
 
 		parameter[parameter.length - 1] = (parameter[parameter.length - 1].split("\r\n"))[0];
 
-		//TODO CHECK NO COOKIE ID CONFLICT!!!!!!!!!!!
 		switch (command) {
 			case "ADD-USER":
 				if (parameter.length != 3) {
-					return "failure 10";
+					return MessageFactory.makeErrorMessage(10);
 				} else {
 					int i = findUserIndex(Integer.parseInt(parameter[0]));
+                    if (i == -1) return MessageFactory.makeErrorMessage(23);
+                    if (users[i].getCookie() == null) return
 					//if the user that wants to create account is currently logged in
 					if (users[i].getCookie().getID() == Integer.parseInt(parameter[0])) {
 						if (!users[i].getCookie().hasTimedOut()) {
-							return addUser(parameter);
+							return addUser(parameter)arpaafffff;
 						} else {
 							users[i].setCookie(null);
-							return "failure 05";
+							return MessageFactory.makeErrorMessage(5);
 						}
 					}
 				}
 			case "USER-LOGIN":
 				if (parameter.length != 2) {
-					return "failure 10";
-				} else {
+					return MessageFactory.makeErrorMessage(10);
+				} else if (findUserIndex(Integer.parseInt(parameter[0])) == -1) {
+                    return MessageFactory.makeErrorMessage(25);
+                } else {
 					return userLogin(parameter);
 				}
 			case "POST-MESSAGE":
 				if (parameter.length != 2) {
-					return "failure 10";
+					return MessageFactory.makeErrorMessage(10);
 				} else {
 					int i = findUserIndex(Integer.parseInt(parameter[0]));
+                    if (i == -1) return MessageFactory.makeErrorMessage(20);
 					//if the user that wants to create account is currently logged in
 					if (users[i].getCookie().getID() == Integer.parseInt(parameter[0])) {
 						if (!users[i].getCookie().hasTimedOut()) {
 							return postMessage(parameter, users[i].getName());
 						} else {
 							users[i].setCookie(null);
-							return "failure 05";
+							return MessageFactory.makeErrorMessage(5);
 						}
 					}
 				}
 			case "GET-MESSAGES":
 				if (parameter.length != 2) {
-					return "failure 10";
+					return MessageFactory.makeErrorMessage(10);
 				} else {
 					int i = findUserIndex(Integer.parseInt(parameter[0]));
+                    if (i == -1) return MessageFactory.makeErrorMessage(20);
 					//if the user that wants to create account is currently logged in
 					if (users[i].getCookie().getID() == Integer.parseInt(parameter[0])) {
 						if (!users[i].getCookie().hasTimedOut()) {
 							return getMessages(parameter);
 						} else {
 							users[i].setCookie(null);
-							return "failure 05";
+							return MessageFactory.makeErrorMessage(5);
 						}
 					}
 				}
 			default:
-				return "failure 11";
+				return MessageFactory.makeErrorMessage(11);
 		}
 	}
 
 	public String addUser(String[] args) {
         int i = findUserIndex(args[1]);
-        if (i != -1) return "failure 22";
+        if (i != -1) return MessageFactory.makeErrorMessage(22);
 
         users = Arrays.copyOf(users, users.length + 1);
         users[users.length - 1] = new User(args[1], args[2], null);
-        return "successful";
+        return "SUCCESS";
 	}
 
 	public String userLogin(String[] args) {
         int i = findUserIndex(args[0]);
-        if (i == -1) return "failure 20";
+        if (i == -1) return MessageFactory.makeErrorMessage(20);
         if (users[i].checkPassword(args[1])) {
             SessionCookie sc = new SessionCookie(cookieIDgen());
 			users[i].setCookie(sc);
-            return String.format("success\n%d", sc.getID());
+			String idString = sc.getID() + "";
+            while (idString.length() < 4) {
+                idString = "0" + idString;
+            }
+            return "SUCCESS\n" + idString;
         } else {
-            return "failure 21";
+            return MessageFactory.makeErrorMessage(21);
         }
 	}
 
 	public String postMessage(String[] args, String name) {
-		cr.put(args[1]);
+		cb.put(name + ": " + args[1]);
 		int i = findUserIndex(name);
-		users[i].setCookie(new SessionCookie(Integer.parseInt(args[1])));
-		return "success";
+		users[i].setCookie(new SessionCookie(Integer.parseInt(args[0])));
+		return "SUCCESS";
 	}
 
 	public String getMessages(String[] args) {
-        cr.getNewest(Integer.parseInt(args[1]));
-		return "success";
+        String[] s = cb.getNewest(Integer.parseInt(args[0]));
+        for (int i = 0; i < s.length; i++) {
+            System.out.println(s[i]);
+        }
+		return "SUCCESS";
 	}
 
     public int findUserIndex(long cookieID) {
