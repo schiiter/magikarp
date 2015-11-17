@@ -17,6 +17,7 @@ public class CircularBuffer {
 
     public void put(String message) {
         String addon;
+        String output;
         addon = Integer.toString(count);
         while (addon.length() < 4) {
             addon = "0" + addon;
@@ -27,8 +28,8 @@ public class CircularBuffer {
             count = 0;
         }
 
-
-        messages.add(0, addon + message);
+        output = addon + ") " + message;
+        messages.add(0, output);
         if (messages.size() > size) {
             messages.remove(size);
         }
