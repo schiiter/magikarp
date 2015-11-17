@@ -104,14 +104,14 @@ public class ChatServer {
 		String request = replaceEscapeChars(oldRequest);
 		String command;
 
-		if(!(request.substring(request.length()-2, request.length()).equals("\r\n"))) {
+		if (!(request.substring(request.length() - 2, request.length()).equals("\r\n"))) {
 			return MessageFactory.makeErrorMessage(10);
 		}
 		String[] temp = request.split("\t");
 		command = temp[0];
 		String[] parameter = new String[temp.length - 1];
 
-		for(int i = 0; i < temp.length - 1; i++) {
+		for (int i = 0; i < temp.length - 1; i++) {
 			parameter[i] = temp[i + 1];
 		}
 
@@ -145,34 +145,43 @@ public class ChatServer {
 			case "POST-MESSAGE":
 				if (parameter.length != 2) {
 					return MessageFactory.makeErrorMessage(10);
-				} else {
-					int i = findUserIndex(Integer.parseInt(parameter[0]));
-                    if (i == -1) return MessageFactory.makeErrorMessage(20);
-					//if the user that wants to create account is currently logged in
-					if (users[i].getCookie().getID() == Integer.parseInt(parameter[0])) {
-						if (!users[i].getCookie().hasTimedOut()) {
-							return postMessage(parameter, users[i].getName());
-						} else {
-							users[i].setCookie(null);
-							return MessageFactory.makeErrorMessage(5);
-						}
-					}
 				}
+                int i;
+                try {
+                    i = findUserIndex(Integer.parseInt(parameter[0]));
+                } catch (NumberFormatException e) {
+                    return MessageFactory.makeErrorMessage(24);
+                }
+                if (i == -1) return MessageFactory.makeErrorMessage(20);
+                //if the user that wants to create account is currently logged in
+                if (users[i] != null) {
+                    if (users[i].getCookie().getID() == Integer.parseInt(parameter[0])) {
+                        if (!users[i].getCookie().hasTimedOut()) {
+                            return postMessage(parameter, users[i].getName());
+                        } else {
+                            users[i].setCookie(null);
+                            return MessageFactory.makeErrorMessage(5);
+                        }
+                    }
+                }
+
 			case "GET-MESSAGES":
 				if (parameter.length != 2) {
 					return MessageFactory.makeErrorMessage(10);
 				} else {
-					int i = findUserIndex(Integer.parseInt(parameter[0]));
+					i = findUserIndex(Integer.parseInt(parameter[0]));
                     if (i == -1) return MessageFactory.makeErrorMessage(20);
 					//if the user that wants to create account is currently logged in
-					if (users[i].getCookie().getID() == Integer.parseInt(parameter[0])) {
-						if (!users[i].getCookie().hasTimedOut()) {
-							return getMessages(parameter);
-						} else {
-							users[i].setCookie(null);
-							return MessageFactory.makeErrorMessage(5);
-						}
-					}
+                    if (users[i] != null) {
+                        if (users[i].getCookie().getID() == Integer.parseInt(parameter[0])) {
+                            if (!users[i].getCookie().hasTimedOut()) {
+                                return getMessages(parameter);
+                            } else {
+                                users[i].setCookie(null);
+                                return MessageFactory.makeErrorMessage(5);
+                            }
+                        }
+                    }
 				}
 			default:
 				return MessageFactory.makeErrorMessage(11);
@@ -207,30 +216,39 @@ public class ChatServer {
 	public String postMessage(String[] args, String name) {
 		cb.put(name + ": " + args[1]);
 		int i = findUserIndex(name);
-		users[i].setCookie(new SessionCookie(Integer.parseInt(args[0])));
+        if (i == -1) return MessageFactory.makeErrorMessage(20);
+        try {
+            users[i].setCookie(new SessionCookie(Integer.parseInt(args[0])));
+        } catch (NumberFormatException e) {
+            return MessageFactory.makeErrorMessage(24);
+        }
 		return "SUCCESS";
 	}
 
 	public String getMessages(String[] args) {
         String[] s = cb.getNewest(Integer.parseInt(args[0]));
         for (int i = 0; i < s.length; i++) {
-            System.out.println(s[i]);
+            if (s[i] != null) {
+                System.out.println(s[i]);
+            }
         }
 		return "SUCCESS";
 	}
 
     public int findUserIndex(long cookieID) {
         for (int i = 0; i < users.length; i++) {
-			if (users[i].getCookie() != null) {
-				if (users[i].getCookie().getID() == cookieID) return i;
-			}
+            if (users[i] != null) {
+                if (users[i].getCookie() != null) {
+                    if (users[i].getCookie().getID() == cookieID) return i;
+                }
+            }
         }
         return -1;
     }
 
     public int findUserIndex(String name) {
         for (int i = 0; i < users.length; i++) {
-			if(users[i] != null) {
+			if (users[i] != null) {
 				if (users[i].getName().equals(name)) return i;
 			}
         }
