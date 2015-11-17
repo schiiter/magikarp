@@ -128,7 +128,7 @@ public class ChatServer {
 					//if the user that wants to create account is currently logged in
 					if (users[i].getCookie().getID() == Integer.parseInt(parameter[0])) {
 						if (!users[i].getCookie().hasTimedOut()) {
-							return addUser(parameter)arpaafffff;
+							return addUser(parameter);
 						} else {
 							users[i].setCookie(null);
 							return MessageFactory.makeErrorMessage(5);
