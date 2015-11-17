@@ -95,88 +95,83 @@ public class ChatServer {
 	 * Determines which client command the request is using and calls the
 	 * function associated with that command.
 	 * 
-	 * @param request
+	 * @param oldRequest
 	 *            - the full line of the client request (CRLF included)
 	 * @return the server response
 	 */
-	public String parseRequest(String request) {
-			String command;
+	public String parseRequest(String oldRequest) {
+		String request = replaceEscapeChars(oldRequest);
+		String command;
 
-			if(!(request.substring(request.length()-4, request.length()).equals("\r\n"))) {
-				return "failure 10";
-			}
+		if(!(request.substring(request.length()-2, request.length()).equals("\r\n"))) {
+			return "failure 10";
+		}
+		String[] temp = request.split("\t");
+		command = temp[0];
+		String[] parameter = new String[temp.length - 1];
 
-			String[] temp = request.split("/t");
-			command = temp[0];
-			String[] parameter = new String[temp.length - 1];
+		for(int i = 0; i < temp.length - 1; i++) {
+			parameter[i] = temp[i + 1];
+		}
 
-			for(int i = 0; i < temp.length - 1; i++) {
-				parameter[i] = temp[i + 1];
-			}
-
-			parameter[parameter.length - 1] = (parameter[parameter.length - 1].split("\r\n"))[0];
-
+		parameter[parameter.length - 1] = (parameter[parameter.length - 1].split("\r\n"))[0];
 
 		//TODO CHECK NO COOKIE ID CONFLICT!!!!!!!!!!!
-			switch (command) {
-				case "ADD-USER":
-					if(parameter.length != 3) {
-						return "failure 10";
-					}
-					else {
-                        int i = findUserIndex(Integer.parseInt(parameter[0]));
-                        //if the user that wants to create account is currently logged in
-                        if (users[i].getCookie().getID() == Integer.parseInt(parameter[0])) {
-                            if (!users[i].getCookie().hasTimedOut()) {
-                                return addUser(parameter);
-                            } else {
-								users[i].setCookie(null);
-								return "failure 05";
-                            }
-                        }
-					}
-				case "USER-LOGIN":
-					if(parameter.length != 2) {
-						return "failure 10";
-					}
-					else {
-						return userLogin(parameter);
-					}
-				case "POST-MESSAGE":
-					if(parameter.length != 2) {
-						return "failure 10";
-					}
-					else {
-						int i = findUserIndex(Integer.parseInt(parameter[0]));
-						//if the user that wants to create account is currently logged in
-						if (users[i].getCookie().getID() == Integer.parseInt(parameter[0])) {
-							if (!users[i].getCookie().hasTimedOut()) {
-								return postMessage(parameter, users[i].getName());
-							} else {
-								users[i].setCookie(null);
-								return "failure 05";
-							}
+		switch (command) {
+			case "ADD-USER":
+				if (parameter.length != 3) {
+					return "failure 10";
+				} else {
+					int i = findUserIndex(Integer.parseInt(parameter[0]));
+					//if the user that wants to create account is currently logged in
+					if (users[i].getCookie().getID() == Integer.parseInt(parameter[0])) {
+						if (!users[i].getCookie().hasTimedOut()) {
+							return addUser(parameter);
+						} else {
+							users[i].setCookie(null);
+							return "failure 05";
 						}
 					}
-				case "GET-MESSAGES":
-					if(parameter.length != 2) {
-						return "failure 10";
-					}
-					else {
-						int i = findUserIndex(Integer.parseInt(parameter[0]));
-						//if the user that wants to create account is currently logged in
-						if (users[i].getCookie().getID() == Integer.parseInt(parameter[0])) {
-							if (!users[i].getCookie().hasTimedOut()) {
-								return getMessages(parameter);
-							} else {
-								users[i].setCookie(null);
-								return "failure 05";
-							}
+				}
+			case "USER-LOGIN":
+				if (parameter.length != 2) {
+					return "failure 10";
+				} else {
+					return userLogin(parameter);
+				}
+			case "POST-MESSAGE":
+				if (parameter.length != 2) {
+					return "failure 10";
+				} else {
+					int i = findUserIndex(Integer.parseInt(parameter[0]));
+					//if the user that wants to create account is currently logged in
+					if (users[i].getCookie().getID() == Integer.parseInt(parameter[0])) {
+						if (!users[i].getCookie().hasTimedOut()) {
+							return postMessage(parameter, users[i].getName());
+						} else {
+							users[i].setCookie(null);
+							return "failure 05";
 						}
 					}
-				default:
-					return "failure 11";
-			}
+				}
+			case "GET-MESSAGES":
+				if (parameter.length != 2) {
+					return "failure 10";
+				} else {
+					int i = findUserIndex(Integer.parseInt(parameter[0]));
+					//if the user that wants to create account is currently logged in
+					if (users[i].getCookie().getID() == Integer.parseInt(parameter[0])) {
+						if (!users[i].getCookie().hasTimedOut()) {
+							return getMessages(parameter);
+						} else {
+							users[i].setCookie(null);
+							return "failure 05";
+						}
+					}
+				}
+			default:
+				return "failure 11";
+		}
 	}
 
 	public String addUser(String[] args) {
@@ -191,7 +186,6 @@ public class ChatServer {
 	public String userLogin(String[] args) {
         int i = findUserIndex(args[0]);
         if (i == -1) return "failure 20";
-        if (!users[i].getCookie().hasTimedOut()) return "failure 25";
         if (users[i].checkPassword(args[1])) {
             SessionCookie sc = new SessionCookie(cookieIDgen());
 			users[i].setCookie(sc);
@@ -215,14 +209,18 @@ public class ChatServer {
 
     public int findUserIndex(long cookieID) {
         for (int i = 0; i < users.length; i++) {
-            if (users[i].getCookie().getID() == cookieID) return i;
+			if (users[i].getCookie() != null) {
+				if (users[i].getCookie().getID() == cookieID) return i;
+			}
         }
         return -1;
     }
 
     public int findUserIndex(String name) {
         for (int i = 0; i < users.length; i++) {
-            if (users[i].getName().equals(name)) return i;
+			if(users[i] != null) {
+				if (users[i].getName().equals(name)) return i;
+			}
         }
         return -1;
     }
