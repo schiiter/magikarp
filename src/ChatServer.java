@@ -176,7 +176,7 @@ public class ChatServer {
 
 	public String addUser(String[] args) {
         int i = findUserIndex(args[1]);
-        if (i == -1) return "failure 22";
+        if (i != -1) return "failure 22";
 
         users = Arrays.copyOf(users, users.length + 1);
         users[users.length - 1] = new User(args[1], args[2], null);
@@ -189,7 +189,7 @@ public class ChatServer {
         if (users[i].checkPassword(args[1])) {
             SessionCookie sc = new SessionCookie(cookieIDgen());
 			users[i].setCookie(sc);
-            return "success";
+            return String.format("success\n%d", sc.getID());
         } else {
             return "failure 21";
         }
