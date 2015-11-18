@@ -19,10 +19,30 @@ public class ChatServer {
 	private CircularBuffer cr;
 
 	public ChatServer(User[] users, int maxMessages) {
-		this.users = users;
-		this.users = Arrays.copyOf(users, users.length + 1);
-		this.users[0] = new User("root", "cs180", null);
-		cr = new CircularBuffer(maxMessages);
+        if (users == null || users.length == 0) {
+            this.users = new User[1];
+            this.users[0] = new User("root", "cs180", null);
+        } else {
+            this.users = new User[0];
+            int n = 0;
+            for (int i = 0; i < users.length; i++) {
+                if (users[i] != null) {
+                    this.users = Arrays.copyOf(this.users, this.users.length + 1);
+                    this.users[n] = users[i];
+                    n++;
+                }
+            }
+
+            int j = findUserIndex("root");
+            if (j == -1) {
+                this.users = Arrays.copyOf(this.users, this.users.length + 1);
+                this.users[this.users.length - 1] = new User("root", "cs180", null);
+            }
+
+//		this.users = Arrays.copyOf(users, users.length + 1);
+//		this.users[0] = new User("root", "cs180", null);
+            cr = new CircularBuffer(maxMessages);
+        }
 	}
 
 	/**
@@ -101,29 +121,29 @@ public class ChatServer {
 	 */
 	public String parseRequest(String oldRequest) {
 		String request = replaceEscapeChars(oldRequest);
-		String command;
+//		String command;
 
 		if(!(request.substring(request.length()-2, request.length()).equals("\r\n"))) {
 			return MessageFactory.makeErrorMessage(10);
 		}
-		String[] temp = request.split("\t");
-		command = temp[0];
-		String[] parameter = new String[temp.length - 1];
-
-		for(int i = 0; i < temp.length - 1; i++) {
-			parameter[i] = temp[i + 1];
-		}
+		String[] parameter = request.split("\t");
+//		command = temp[0];
+//		String[] parameter = new String[temp.length];
+//
+//		for(int i = 0; i < temp.length - 1; i++) {
+//			parameter[i] = temp[i];
+//		}
 
 		parameter[parameter.length - 1] = (parameter[parameter.length - 1].split("\r\n"))[0];
 
-		switch (command) {
+		switch (parameter[0]) {
 			case "ADD-USER":
-				if (parameter.length != 3) {
+				if (parameter.length != 4) {
 					return MessageFactory.makeErrorMessage(10);
 				} else {
-					int i = findUserIndex(Integer.parseInt(parameter[0]));
+					int i = findUserIndex(Integer.parseInt(parameter[1]));
 					//if the user that wants to create account is currently logged in
-					if (users[i].getCookie().getID() == Integer.parseInt(parameter[0])) {
+					if (users[i].getCookie().getID() == Integer.parseInt(parameter[1])) {
 						if (!users[i].getCookie().hasTimedOut()) {
 							return addUser(parameter);
 						} else {
@@ -133,18 +153,18 @@ public class ChatServer {
 					}
 				}
 			case "USER-LOGIN":
-				if (parameter.length != 2) {
+				if (parameter.length != 3) {
 					return MessageFactory.makeErrorMessage(10);
 				} else {
 					return userLogin(parameter);
 				}
 			case "POST-MESSAGE":
-				if (parameter.length != 2) {
+				if (parameter.length != 3) {
 					return MessageFactory.makeErrorMessage(10);
 				} else {
-					int i = findUserIndex(Integer.parseInt(parameter[0]));
+					int i = findUserIndex(Integer.parseInt(parameter[1]));
 					//if the user that wants to create account is currently logged in
-					if (users[i].getCookie().getID() == Integer.parseInt(parameter[0])) {
+					if (users[i].getCookie().getID() == Integer.parseInt(parameter[1])) {
 						if (!users[i].getCookie().hasTimedOut()) {
 							return postMessage(parameter, users[i].getName());
 						} else {
@@ -154,12 +174,12 @@ public class ChatServer {
 					}
 				}
 			case "GET-MESSAGES":
-				if (parameter.length != 2) {
+				if (parameter.length != 3) {
 					return MessageFactory.makeErrorMessage(10);
 				} else {
-					int i = findUserIndex(Integer.parseInt(parameter[0]));
+					int i = findUserIndex(Integer.parseInt(parameter[1]));
 					//if the user that wants to create account is currently logged in
-					if (users[i].getCookie().getID() == Integer.parseInt(parameter[0])) {
+					if (users[i].getCookie().getID() == Integer.parseInt(parameter[1])) {
 						if (!users[i].getCookie().hasTimedOut()) {
 							return getMessages(parameter);
 						} else {
@@ -174,42 +194,47 @@ public class ChatServer {
 	}
 
 	public String addUser(String[] args) {
-        int i = findUserIndex(args[1]);
+        int i = findUserIndex(args[2]);
         if (i != -1) return MessageFactory.makeErrorMessage(22);
 
         users = Arrays.copyOf(users, users.length + 1);
-        users[users.length - 1] = new User(args[1], args[2], null);
+        users[users.length - 1] = new User(args[2], args[3], null);
         return "SUCCESS\r\n";
 	}
 
 	public String userLogin(String[] args) {
-        int i = findUserIndex(args[0]);
+        int i = findUserIndex(args[1]);
         if (i == -1) return MessageFactory.makeErrorMessage(20);
-        if (users[i].checkPassword(args[1])) {
+        if (users[i].checkPassword(args[2])) {
             SessionCookie sc = new SessionCookie(cookieIDgen());
 			users[i].setCookie(sc);
-            return String.format("SUCCESS\n%d\r\n", sc.getID());
+            return String.format("SUCCESS\t%d\r\n", sc.getID());
         } else {
             return MessageFactory.makeErrorMessage(21);
         }
 	}
 
 	public String postMessage(String[] args, String name) {
-		String modMessage = name + ": " + args[1];
+        String s = args[2].replace(" ", "");
+        if (s.equals("")) {
+            return "FAILURE\t024\t\r\n";
+        }
+		String modMessage = name + ": " + args[2];
 		cr.put(modMessage);
 		int i = findUserIndex(name);
-		users[i].setCookie(new SessionCookie(Integer.parseInt(args[0])));
+        if (i == -1) return MessageFactory.makeErrorMessage(20);
+        users[i].setCookie(new SessionCookie(Integer.parseInt(args[0])));
 		return "SUCCESS\r\n";
 	}
 
 	public String getMessages(String[] args) {
 		//todo check invalid input
-		if(Integer.parseInt(args[1]) < 1) {
+		if(Integer.parseInt(args[2]) < 1) {
 			return MessageFactory.makeErrorMessage(24);
 		}
         String[] out = cr.getNewest(Integer.parseInt(args[1]));
 		String result = "SUCCESS"; //"SUCCESS\tmessage1\tmessage2\tmessage3\r\n""
-		for(int i = 0; i < out.length; i++) {
+		for (int i = 0; i < out.length; i++) {
 			result = result + "\t" + out[i];
 		}
 		result = result + "\r\n";
