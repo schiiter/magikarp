@@ -22,7 +22,7 @@ public class User {
     }
 
     public boolean checkPassword(String password) {
-        if(password.equals(this.password)) {
+        if (password.equals(this.password)) {
             return true;
         }
         else {

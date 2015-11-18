@@ -176,7 +176,7 @@ public class ChatServerTest {
         ChatServer chatServer = new ChatServer(users, 100);
 
         String ta = "SUCCESS\r\n";
-        String student = chatServer.postMessage(new String[] { "POST-MESSAGE", "42", "Hello, world!!" },  "varun");
+        String student = chatServer.postMessage(new String[] { "POST-MESSAGE", "42", "Hello, world!!" },  "greg");
 
         assertEquals("ChatServer: 'postMessage' failed when it shouldn't have.",
                 ta, student);

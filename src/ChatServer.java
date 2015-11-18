@@ -123,7 +123,7 @@ public class ChatServer {
 		String request = replaceEscapeChars(oldRequest);
 //		String command;
 
-		if(!(request.substring(request.length()-2, request.length()).equals("\r\n"))) {
+		if (!(request.substring(request.length() - 2, request.length()).equals("\r\n"))) {
 			return MessageFactory.makeErrorMessage(10);
 		}
 		String[] parameter = request.split("\t");
@@ -241,7 +241,7 @@ public class ChatServer {
 
 	public String getMessages(String[] args) {
 		//todo check invalid input
-		if(Integer.parseInt(args[2]) < 1) {
+		if (Integer.parseInt(args[2]) < 1) {
 			return MessageFactory.makeErrorMessage(24);
 		}
         String[] out = cr.getNewest(Integer.parseInt(args[1]));
@@ -264,7 +264,7 @@ public class ChatServer {
 
     public int findUserIndex(String name) {
         for (int i = 0; i < users.length; i++) {
-			if(users[i] != null) {
+			if (users[i] != null) {
 				if (users[i].getName().equals(name)) return i;
 			}
         }
