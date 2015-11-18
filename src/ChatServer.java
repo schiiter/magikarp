@@ -179,6 +179,9 @@ public class ChatServer {
 				} else {
 					int i = findUserIndex(Integer.parseInt(parameter[1]));
 					//if the user that wants to create account is currently logged in
+                    if (i == -1) {
+                        return "FAILURE\t23\tLogin Error: The specified user has not logged in to the server\r\n";
+                    }
 					if (users[i].getCookie().getID() == Integer.parseInt(parameter[1])) {
 						if (!users[i].getCookie().hasTimedOut()) {
 							return getMessages(parameter);
@@ -223,7 +226,7 @@ public class ChatServer {
 		cr.put(modMessage);
 		int i = findUserIndex(name);
         if (i == -1) return MessageFactory.makeErrorMessage(20);
-        users[i].setCookie(new SessionCookie(Integer.parseInt(args[0])));
+        users[i].setCookie(new SessionCookie(Integer.parseInt(args[1])));
 		return "SUCCESS\r\n";
 	}
 
