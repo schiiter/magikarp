@@ -197,6 +197,15 @@ public class ChatServer {
 	}
 
 	public String addUser(String[] args) {
+        String s = args[1].replace(" ", "");
+        if (args[2].length() > 20 || args[2].length() < 1 || !args[2].matches("[A-Za-z0-9]+") ||
+                args[3].length() > 40 || args[3].length() < 1 || !args[3].matches("[A-Za-z0-9]+")) {
+            return MessageFactory.makeErrorMessage(MessageFactory.INVALID_VALUE_ERROR);
+        }
+
+        if (s.equals("")) {
+            return "FAILURE\t24\t\r\n";
+        }
         int i = findUserIndex(args[2]);
         if (i != -1) return MessageFactory.makeErrorMessage(22);
 
@@ -220,7 +229,7 @@ public class ChatServer {
 	public String postMessage(String[] args, String name) {
         String s = args[2].replace(" ", "");
         if (s.equals("")) {
-            return "FAILURE\t024\t\r\n";
+            return "FAILURE\t24\t\r\n";
         }
 		String modMessage = name + ": " + args[2];
 		cr.put(modMessage);
