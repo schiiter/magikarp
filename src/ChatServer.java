@@ -204,7 +204,7 @@ public class ChatServer {
         }
 
         if (s.equals("")) {
-            return "FAILURE\t24\t\r\n";
+            return MessageFactory.makeErrorMessage(24);
         }
         int i = findUserIndex(args[2]);
         if (i != -1) return MessageFactory.makeErrorMessage(22);
@@ -215,6 +215,8 @@ public class ChatServer {
 	}
 
 	public String userLogin(String[] args) {
+		//next line is new!!!!!  11/20 7:01
+		if (args[1] == null || args[2] == null) return MessageFactory.makeErrorMessage(24);
         int i = findUserIndex(args[1]);
         if (i == -1) return MessageFactory.makeErrorMessage(20);
         if (users[i].checkPassword(args[2])) {
@@ -229,7 +231,7 @@ public class ChatServer {
 	public String postMessage(String[] args, String name) {
         String s = args[2].replace(" ", "");
         if (s.equals("")) {
-            return "FAILURE\t24\t\r\n";
+            return MessageFactory.makeErrorMessage(24);
         }
 		String modMessage = name + ": " + args[2];
 		cr.put(modMessage);
